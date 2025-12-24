@@ -20,6 +20,21 @@ const ComponentList = ({ refreshTrigger }) => {
         }
     };
 
+    const handleDelete = async (id) => {
+        if (!window.confirm("Are you sure you want to delete this component?")) {
+            return;
+        }
+
+        try {
+            await api.delete(`/components/${id}`);
+            // Optimistic update or refetch
+            setComponents(prev => prev.filter(c => c.id !== id));
+        } catch (err) {
+            console.error("Error deleting component:", err);
+            alert("Failed to delete component. " + (err.response?.data?.detail || ""));
+        }
+    };
+
     useEffect(() => {
         fetchComponents();
     }, [refreshTrigger]);
@@ -38,12 +53,13 @@ const ComponentList = ({ refreshTrigger }) => {
                         <th scope="col" className="px-6 py-3">Cost ($)</th>
                         <th scope="col" className="px-6 py-3">Qty</th>
                         <th scope="col" className="px-6 py-3">Parent ID</th>
+                        <th scope="col" className="px-6 py-3">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {components.length === 0 ? (
                         <tr>
-                            <td colSpan="6" className="px-6 py-4 text-center">No components found.</td>
+                            <td colSpan="7" className="px-6 py-4 text-center">No components found.</td>
                         </tr>
                     ) : (
                         components.map((comp) => (
@@ -54,6 +70,14 @@ const ComponentList = ({ refreshTrigger }) => {
                                 <td className="px-6 py-4">{comp.cost_usd}</td>
                                 <td className="px-6 py-4">{comp.quantity}</td>
                                 <td className="px-6 py-4">{comp.parent_id || '-'}</td>
+                                <td className="px-6 py-4">
+                                    <button
+                                        onClick={() => handleDelete(comp.id)}
+                                        className="font-medium text-red-600 dark:text-red-500 hover:underline bg-transparent border-0 p-0 cursor-pointer"
+                                    >
+                                        Delete
+                                    </button>
+                                </td>
                             </tr>
                         ))
                     )}
@@ -64,4 +88,3 @@ const ComponentList = ({ refreshTrigger }) => {
 };
 
 export default ComponentList;
-
