@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from typing import Optional, List, Dict, Any
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 
@@ -73,6 +73,16 @@ def update_component(component_id: int, payload: ComponentUpdate, db: Session = 
     db.commit()
     db.refresh(comp)
     return comp
+
+@router.delete("/{component_id}", status_code=204)
+def delete_component(component_id: int, db: Session = Depends(get_db)):
+    comp = db.get(Component, component_id)
+    if comp is None:
+        raise HTTPException(status_code=404, detail="Component not found")
+    
+    db.delete(comp)
+    db.commit()
+    return Response(status_code=204)
 
 def _build_tree(all_components: List[Component]) -> List[ComponentTree]:
     # Build map id -> node dict
