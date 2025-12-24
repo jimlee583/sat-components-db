@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.venv/
+.env
+backend/.pytest_cache/
+backend/alembic/versions/*.pyc
+.DS_Store
