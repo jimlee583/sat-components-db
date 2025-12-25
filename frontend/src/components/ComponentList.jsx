@@ -5,6 +5,8 @@ const ComponentList = ({ refreshTrigger }) => {
     const [components, setComponents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [editingId, setEditingId] = useState(null);
+    const [editFormData, setEditFormData] = useState({});
 
     const fetchComponents = async () => {
         try {
@@ -35,6 +37,64 @@ const ComponentList = ({ refreshTrigger }) => {
         }
     };
 
+    const handleEditClick = (component) => {
+        setEditingId(component.id);
+        setEditFormData({
+            name: component.name,
+            mass_kg: component.mass_kg,
+            cost_usd: component.cost_usd,
+            quantity: component.quantity,
+            parent_id: component.parent_id
+        });
+    };
+
+    const handleEditChange = (e) => {
+        const { name, value } = e.target;
+        setEditFormData({
+            ...editFormData,
+            [name]: value
+        });
+    };
+
+    const handleEditCancel = () => {
+        setEditingId(null);
+        setEditFormData({});
+    };
+
+    const handleEditSave = async (id) => {
+        try {
+            const payload = {
+                name: editFormData.name,
+                mass_kg: parseFloat(editFormData.mass_kg),
+                cost_usd: parseFloat(editFormData.cost_usd),
+                quantity: parseInt(editFormData.quantity, 10),
+                parent_id: (editFormData.parent_id === '' || editFormData.parent_id === null) ? null : parseInt(editFormData.parent_id, 10),
+            };
+
+            await api.patch(`/components/${id}`, payload);
+            
+            // Update local state with the new values (response might be better but payload + id is close enough for optimistic/quick update)
+            // Ideally we use the response from patch, but for now let's just update locally or refetch
+            // Let's refetch to be safe about hierarchy constraints etc, or just update fields
+            
+            // For better UX, let's update the local list with the values we sent/logic
+            // But strict correctness suggests using the response.
+            // Let's try to update locally using the response from the server if possible?
+            // The previous code didn't use response for delete.
+            // Let's refetch? No, that might reset the view or be slow.
+            // Let's update locally.
+            
+            setComponents(prev => prev.map(c => c.id === id ? { ...c, ...payload } : c));
+            setEditingId(null);
+            setEditFormData({});
+            
+            // Optionally we could fetchComponents() to ensure consistency
+        } catch (err) {
+            console.error("Error updating component:", err);
+            alert("Failed to update component. " + (err.response?.data?.detail || ""));
+        }
+    };
+
     useEffect(() => {
         fetchComponents();
     }, [refreshTrigger]);
@@ -62,24 +122,102 @@ const ComponentList = ({ refreshTrigger }) => {
                             <td colSpan="7" className="px-6 py-4 text-center">No components found.</td>
                         </tr>
                     ) : (
-                        components.map((comp) => (
-                            <tr key={comp.id} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
-                                <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">{comp.id}</td>
-                                <td className="px-6 py-4">{comp.name}</td>
-                                <td className="px-6 py-4">{comp.mass_kg}</td>
-                                <td className="px-6 py-4">{comp.cost_usd}</td>
-                                <td className="px-6 py-4">{comp.quantity}</td>
-                                <td className="px-6 py-4">{comp.parent_id || '-'}</td>
-                                <td className="px-6 py-4">
-                                    <button
-                                        onClick={() => handleDelete(comp.id)}
-                                        className="font-medium text-red-600 dark:text-red-500 hover:underline bg-transparent border-0 p-0 cursor-pointer"
-                                    >
-                                        Delete
-                                    </button>
-                                </td>
-                            </tr>
-                        ))
+                        components.map((comp) => {
+                            const isEditing = editingId === comp.id;
+                            return (
+                                <tr key={comp.id} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                                    <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">{comp.id}</td>
+                                    
+                                    {isEditing ? (
+                                        <>
+                                            <td className="px-6 py-4">
+                                                <input 
+                                                    type="text" 
+                                                    name="name" 
+                                                    value={editFormData.name} 
+                                                    onChange={handleEditChange} 
+                                                    className="border rounded p-1 w-full dark:bg-gray-700 dark:text-white dark:border-gray-600" 
+                                                />
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <input 
+                                                    type="number" 
+                                                    step="0.000001" 
+                                                    name="mass_kg" 
+                                                    value={editFormData.mass_kg} 
+                                                    onChange={handleEditChange} 
+                                                    className="border rounded p-1 w-24 dark:bg-gray-700 dark:text-white dark:border-gray-600" 
+                                                />
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <input 
+                                                    type="number" 
+                                                    step="0.01" 
+                                                    name="cost_usd" 
+                                                    value={editFormData.cost_usd} 
+                                                    onChange={handleEditChange} 
+                                                    className="border rounded p-1 w-24 dark:bg-gray-700 dark:text-white dark:border-gray-600" 
+                                                />
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <input 
+                                                    type="number" 
+                                                    name="quantity" 
+                                                    value={editFormData.quantity} 
+                                                    onChange={handleEditChange} 
+                                                    className="border rounded p-1 w-20 dark:bg-gray-700 dark:text-white dark:border-gray-600" 
+                                                />
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <input 
+                                                    type="number" 
+                                                    name="parent_id" 
+                                                    value={editFormData.parent_id || ''} 
+                                                    onChange={handleEditChange} 
+                                                    className="border rounded p-1 w-20 dark:bg-gray-700 dark:text-white dark:border-gray-600" 
+                                                />
+                                            </td>
+                                            <td className="px-6 py-4 space-x-2">
+                                                <button 
+                                                    onClick={() => handleEditSave(comp.id)} 
+                                                    className="font-medium text-green-600 dark:text-green-500 hover:underline bg-transparent border-0 cursor-pointer"
+                                                >
+                                                    Save
+                                                </button>
+                                                <button 
+                                                    onClick={handleEditCancel} 
+                                                    className="font-medium text-gray-600 dark:text-gray-400 hover:underline bg-transparent border-0 cursor-pointer"
+                                                >
+                                                    Cancel
+                                                </button>
+                                            </td>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <td className="px-6 py-4">{comp.name}</td>
+                                            <td className="px-6 py-4">{comp.mass_kg}</td>
+                                            <td className="px-6 py-4">{comp.cost_usd}</td>
+                                            <td className="px-6 py-4">{comp.quantity}</td>
+                                            <td className="px-6 py-4">{comp.parent_id || '-'}</td>
+                                            <td className="px-6 py-4 space-x-2">
+                                                <button
+                                                    onClick={() => handleEditClick(comp)}
+                                                    className="font-medium text-blue-600 dark:text-blue-500 hover:underline bg-transparent border-0 cursor-pointer"
+                                                >
+                                                    Edit
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDelete(comp.id)}
+                                                    className="font-medium text-red-600 dark:text-red-500 hover:underline bg-transparent border-0 cursor-pointer"
+                                                >
+                                                    Delete
+                                                </button>
+                                            </td>
+                                        </>
+                                    )}
+                                </tr>
+                            );
+                        })
                     )}
                 </tbody>
             </table>
