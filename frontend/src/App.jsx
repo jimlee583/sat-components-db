@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import ComponentList from './components/ComponentList';
 import AddComponentForm from './components/AddComponentForm';
+import SubsystemManager from './components/SubsystemManager';
 
 function App() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -25,6 +26,8 @@ function App() {
           <div>
             <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-4">Add Component</h2>
             <AddComponentForm onAddSuccess={handleAddSuccess} />
+            
+            <SubsystemManager />
           </div>
         </div>
       </div>

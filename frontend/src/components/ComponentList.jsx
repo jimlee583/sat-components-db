@@ -7,6 +7,19 @@ const ComponentList = ({ refreshTrigger }) => {
     const [error, setError] = useState(null);
     const [editingId, setEditingId] = useState(null);
     const [editFormData, setEditFormData] = useState({});
+    const [subsystems, setSubsystems] = useState([]);
+
+    useEffect(() => {
+        const fetchSubsystems = async () => {
+            try {
+                const response = await api.get('/subsystems');
+                setSubsystems(response.data);
+            } catch (err) {
+                console.error("Error fetching subsystems:", err);
+            }
+        };
+        fetchSubsystems();
+    }, []);
 
     const fetchComponents = async () => {
         try {
@@ -44,7 +57,8 @@ const ComponentList = ({ refreshTrigger }) => {
             mass_kg: component.mass_kg,
             cost_usd: component.cost_usd,
             quantity: component.quantity,
-            parent_id: component.parent_id
+            parent_id: component.parent_id,
+            subsystem_id: component.subsystem_id
         });
     };
 
@@ -69,6 +83,7 @@ const ComponentList = ({ refreshTrigger }) => {
                 cost_usd: parseFloat(editFormData.cost_usd),
                 quantity: parseInt(editFormData.quantity, 10),
                 parent_id: (editFormData.parent_id === '' || editFormData.parent_id === null) ? null : parseInt(editFormData.parent_id, 10),
+                subsystem_id: (editFormData.subsystem_id === '' || editFormData.subsystem_id === null) ? null : parseInt(editFormData.subsystem_id, 10),
             };
 
             await api.patch(`/components/${id}`, payload);
@@ -113,13 +128,14 @@ const ComponentList = ({ refreshTrigger }) => {
                         <th scope="col" className="px-6 py-3">Cost ($)</th>
                         <th scope="col" className="px-6 py-3">Qty</th>
                         <th scope="col" className="px-6 py-3">Parent ID</th>
+                        <th scope="col" className="px-6 py-3">Subsystem</th>
                         <th scope="col" className="px-6 py-3">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {components.length === 0 ? (
                         <tr>
-                            <td colSpan="7" className="px-6 py-4 text-center">No components found.</td>
+                            <td colSpan="8" className="px-6 py-4 text-center">No components found.</td>
                         </tr>
                     ) : (
                         components.map((comp) => {
@@ -177,6 +193,21 @@ const ComponentList = ({ refreshTrigger }) => {
                                                     className="border rounded p-1 w-20 dark:bg-gray-700 dark:text-white dark:border-gray-600" 
                                                 />
                                             </td>
+                                            <td className="px-6 py-4">
+                                                <select
+                                                    name="subsystem_id"
+                                                    value={editFormData.subsystem_id || ''}
+                                                    onChange={handleEditChange}
+                                                    className="border rounded p-1 w-32 dark:bg-gray-700 dark:text-white dark:border-gray-600"
+                                                >
+                                                    <option value="">None</option>
+                                                    {subsystems.map(s => (
+                                                        <option key={s.id} value={s.id}>
+                                                            {s.name}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </td>
                                             <td className="px-6 py-4 space-x-2">
                                                 <button 
                                                     onClick={() => handleEditSave(comp.id)} 
@@ -199,6 +230,7 @@ const ComponentList = ({ refreshTrigger }) => {
                                             <td className="px-6 py-4">{comp.cost_usd}</td>
                                             <td className="px-6 py-4">{comp.quantity}</td>
                                             <td className="px-6 py-4">{comp.parent_id || '-'}</td>
+                                            <td className="px-6 py-4">{comp.subsystem ? comp.subsystem.name : '-'}</td>
                                             <td className="px-6 py-4 space-x-2">
                                                 <button
                                                     onClick={() => handleEditClick(comp)}

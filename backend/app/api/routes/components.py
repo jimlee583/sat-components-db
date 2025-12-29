@@ -2,11 +2,12 @@ from __future__ import annotations
 
 from typing import Optional, List, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import select
 
 from app.api.deps import get_db
 from app.models.component import Component
+from app.models.subsystem import Subsystem
 from app.schemas.component import ComponentCreate, ComponentOut, ComponentUpdate, ComponentTree
 
 router = APIRouter()
@@ -19,6 +20,11 @@ def create_component(payload: ComponentCreate, db: Session = Depends(get_db)) ->
         if parent is None:
             raise HTTPException(status_code=404, detail="parent_id not found")
 
+    if payload.subsystem_id is not None:
+        subsystem = db.get(Subsystem, payload.subsystem_id)
+        if subsystem is None:
+            raise HTTPException(status_code=404, detail="subsystem_id not found")
+
     existing = db.execute(select(Component).where(Component.name == payload.name)).scalar_one_or_none()
     if existing:
         raise HTTPException(status_code=409, detail="Component name already exists")
@@ -29,6 +35,7 @@ def create_component(payload: ComponentCreate, db: Session = Depends(get_db)) ->
         cost_usd=payload.cost_usd,
         quantity=payload.quantity,
         parent_id=payload.parent_id,
+        subsystem_id=payload.subsystem_id,
     )
     db.add(comp)
     db.commit()
@@ -40,14 +47,18 @@ def list_components(
     roots_only: bool = Query(False, description="If true, only return components with no parent"),
     db: Session = Depends(get_db),
 ) -> List[Component]:
-    stmt = select(Component)
+    stmt = select(Component).options(joinedload(Component.subsystem))
     if roots_only:
         stmt = stmt.where(Component.parent_id.is_(None))
     return list(db.execute(stmt.order_by(Component.id)).scalars().all())
 
 @router.get("/{component_id}", response_model=ComponentOut)
 def get_component(component_id: int, db: Session = Depends(get_db)) -> Component:
-    comp = db.get(Component, component_id)
+    comp = db.execute(
+        select(Component)
+        .options(joinedload(Component.subsystem))
+        .where(Component.id == component_id)
+    ).scalar_one_or_none()
     if comp is None:
         raise HTTPException(status_code=404, detail="Component not found")
     return comp
@@ -64,6 +75,11 @@ def update_component(component_id: int, payload: ComponentUpdate, db: Session = 
         parent = db.get(Component, payload.parent_id)
         if parent is None:
             raise HTTPException(status_code=404, detail="parent_id not found")
+
+    if payload.subsystem_id is not None:
+        subsystem = db.get(Subsystem, payload.subsystem_id)
+        if subsystem is None:
+            raise HTTPException(status_code=404, detail="subsystem_id not found")
 
     # Apply partial updates
     data = payload.model_dump(exclude_unset=True)
@@ -135,27 +151,33 @@ def seed_example(db: Session = Depends(get_db)) -> List[Component]:
     # Avoid double-seeding: if exists, return current list
     existing = db.execute(select(Component).limit(1)).scalar_one_or_none()
     if existing:
-        return list(db.execute(select(Component).order_by(Component.id)).scalars().all())
+        return list(db.execute(select(Component).options(joinedload(Component.subsystem)).order_by(Component.id)).scalars().all())
 
-    battery_assembly = Component(name="Battery Assembly", mass_kg=12.5, cost_usd=25000, quantity=1, parent_id=None)
+    # Create subsystems
+    eps = Subsystem(name="EPS")
+    struc = Subsystem(name="Structures")
+    db.add_all([eps, struc])
+    db.flush()
+
+    battery_assembly = Component(name="Battery Assembly", mass_kg=12.5, cost_usd=25000, quantity=1, parent_id=None, subsystem_id=eps.id)
     db.add(battery_assembly)
     db.flush()
 
-    li_ion_battery = Component(name="Li-Ion Battery", mass_kg=10.0, cost_usd=18000, quantity=1, parent_id=battery_assembly.id)
-    battery_bracket = Component(name="Battery Bracket", mass_kg=2.5, cost_usd=7000, quantity=1, parent_id=battery_assembly.id)
+    li_ion_battery = Component(name="Li-Ion Battery", mass_kg=10.0, cost_usd=18000, quantity=1, parent_id=battery_assembly.id, subsystem_id=eps.id)
+    battery_bracket = Component(name="Battery Bracket", mass_kg=2.5, cost_usd=7000, quantity=1, parent_id=battery_assembly.id, subsystem_id=struc.id)
     db.add_all([li_ion_battery, battery_bracket])
     db.flush()
 
-    li_ion_cell = Component(name="Li-Ion Cell", mass_kg=0.045, cost_usd=35, quantity=200, parent_id=li_ion_battery.id)
+    li_ion_cell = Component(name="Li-Ion Cell", mass_kg=0.045, cost_usd=35, quantity=200, parent_id=li_ion_battery.id, subsystem_id=eps.id)
     db.add(li_ion_cell)
 
-    solar_array = Component(name="Solar Array", mass_kg=25.0, cost_usd=90000, quantity=1, parent_id=None)
+    solar_array = Component(name="Solar Array", mass_kg=25.0, cost_usd=90000, quantity=1, parent_id=None, subsystem_id=eps.id)
     db.add(solar_array)
     db.flush()
 
-    panel = Component(name="Solar Panel", mass_kg=2.0, cost_usd=5000, quantity=8, parent_id=solar_array.id)
-    harness = Component(name="Array Harness", mass_kg=1.2, cost_usd=1500, quantity=1, parent_id=solar_array.id)
+    panel = Component(name="Solar Panel", mass_kg=2.0, cost_usd=5000, quantity=8, parent_id=solar_array.id, subsystem_id=eps.id)
+    harness = Component(name="Array Harness", mass_kg=1.2, cost_usd=1500, quantity=1, parent_id=solar_array.id, subsystem_id=eps.id)
     db.add_all([panel, harness])
 
     db.commit()
-    return list(db.execute(select(Component).order_by(Component.id)).scalars().all())
+    return list(db.execute(select(Component).options(joinedload(Component.subsystem)).order_by(Component.id)).scalars().all())
