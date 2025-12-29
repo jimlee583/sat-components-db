@@ -8,9 +8,23 @@ const AddComponentForm = ({ onAddSuccess }) => {
         cost_usd: 0,
         quantity: 1,
         parent_id: '',
+        subsystem_id: '',
     });
     const [error, setError] = useState(null);
     const [submitting, setSubmitting] = useState(false);
+    const [subsystems, setSubsystems] = useState([]);
+
+    React.useEffect(() => {
+        const fetchSubsystems = async () => {
+            try {
+                const response = await api.get('/subsystems');
+                setSubsystems(response.data);
+            } catch (err) {
+                console.error("Error fetching subsystems:", err);
+            }
+        };
+        fetchSubsystems();
+    }, []);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -31,6 +45,7 @@ const AddComponentForm = ({ onAddSuccess }) => {
             cost_usd: parseFloat(formData.cost_usd),
             quantity: parseInt(formData.quantity, 10),
             parent_id: formData.parent_id ? parseInt(formData.parent_id, 10) : null,
+            subsystem_id: formData.subsystem_id ? parseInt(formData.subsystem_id, 10) : null,
         };
 
         try {
@@ -41,6 +56,7 @@ const AddComponentForm = ({ onAddSuccess }) => {
                 cost_usd: 0,
                 quantity: 1,
                 parent_id: '',
+                subsystem_id: '',
             });
             if (onAddSuccess) onAddSuccess();
         } catch (err) {
@@ -98,7 +114,7 @@ const AddComponentForm = ({ onAddSuccess }) => {
                         />
                     </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
                         <label htmlFor="quantity" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Quantity</label>
                         <input
@@ -122,6 +138,23 @@ const AddComponentForm = ({ onAddSuccess }) => {
                             onChange={handleChange}
                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm p-2 border"
                         />
+                    </div>
+                    <div>
+                        <label htmlFor="subsystem_id" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Subsystem (Optional)</label>
+                        <select
+                            name="subsystem_id"
+                            id="subsystem_id"
+                            value={formData.subsystem_id}
+                            onChange={handleChange}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm p-2 border"
+                        >
+                            <option value="">None</option>
+                            {subsystems.map(s => (
+                                <option key={s.id} value={s.id}>
+                                    {s.name}
+                                </option>
+                            ))}
+                        </select>
                     </div>
                 </div>
                 <div className="pt-2">
