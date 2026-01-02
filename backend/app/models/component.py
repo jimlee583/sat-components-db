@@ -15,6 +15,7 @@ class Component(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 
     name: Mapped[str] = mapped_column(String(200), nullable=False, unique=True)
+    wbs: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
 
     mass_kg: Mapped[float] = mapped_column(Numeric(12, 6), nullable=False, default=0)
     cost_usd: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False, default=0)
