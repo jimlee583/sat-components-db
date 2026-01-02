@@ -56,6 +56,7 @@ const ComponentList = ({ refreshTrigger }) => {
             name: component.name,
             part_number: component.part_number,
             wbs: component.wbs,
+            make_buy: component.make_buy,
             mass_kg: component.mass_kg,
             cost_usd: component.cost_usd,
             quantity: component.quantity,
@@ -83,6 +84,7 @@ const ComponentList = ({ refreshTrigger }) => {
                 name: editFormData.name,
                 part_number: editFormData.part_number || null,
                 wbs: editFormData.wbs || null,
+                make_buy: editFormData.make_buy || null,
                 mass_kg: parseFloat(editFormData.mass_kg),
                 cost_usd: parseFloat(editFormData.cost_usd),
                 quantity: parseInt(editFormData.quantity, 10),
@@ -110,6 +112,15 @@ const ComponentList = ({ refreshTrigger }) => {
     if (loading) return <div className="text-center p-4">Loading...</div>;
     if (error) return <div className="text-red-500 p-4">{error}</div>;
 
+    const getMakeBuyLabel = (val) => {
+        switch(val) {
+            case 'M': return 'Make';
+            case 'B': return 'Buy';
+            case 'P': return 'Procurement';
+            default: return '-';
+        }
+    };
+
     return (
         <div className="overflow-x-auto shadow-md sm:rounded-lg">
             <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
@@ -119,6 +130,7 @@ const ComponentList = ({ refreshTrigger }) => {
                         <th scope="col" className="px-6 py-3">Name</th>
                         <th scope="col" className="px-6 py-3">PN</th>
                         <th scope="col" className="px-6 py-3">WBS</th>
+                        <th scope="col" className="px-6 py-3">M/B</th>
                         <th scope="col" className="px-6 py-3">Mass (kg)</th>
                         <th scope="col" className="px-6 py-3">Cost ($)</th>
                         <th scope="col" className="px-6 py-3">Qty</th>
@@ -130,7 +142,7 @@ const ComponentList = ({ refreshTrigger }) => {
                 <tbody>
                     {components.length === 0 ? (
                         <tr>
-                            <td colSpan="9" className="px-6 py-4 text-center">No components found.</td>
+                            <td colSpan="11" className="px-6 py-4 text-center">No components found.</td>
                         </tr>
                     ) : (
                         components.map((comp) => {
@@ -167,6 +179,19 @@ const ComponentList = ({ refreshTrigger }) => {
                                                     onChange={handleEditChange} 
                                                     className="border rounded p-1 w-24 dark:bg-gray-700 dark:text-white dark:border-gray-600" 
                                                 />
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <select
+                                                    name="make_buy"
+                                                    value={editFormData.make_buy || ''}
+                                                    onChange={handleEditChange}
+                                                    className="border rounded p-1 w-24 dark:bg-gray-700 dark:text-white dark:border-gray-600"
+                                                >
+                                                    <option value="">-</option>
+                                                    <option value="M">Make</option>
+                                                    <option value="B">Buy</option>
+                                                    <option value="P">Procurement</option>
+                                                </select>
                                             </td>
                                             <td className="px-6 py-4">
                                                 <input 
@@ -241,6 +266,7 @@ const ComponentList = ({ refreshTrigger }) => {
                                             <td className="px-6 py-4">{comp.name}</td>
                                             <td className="px-6 py-4">{comp.part_number || '-'}</td>
                                             <td className="px-6 py-4">{comp.wbs || '-'}</td>
+                                            <td className="px-6 py-4">{getMakeBuyLabel(comp.make_buy)}</td>
                                             <td className="px-6 py-4">{comp.mass_kg}</td>
                                             <td className="px-6 py-4">{comp.cost_usd}</td>
                                             <td className="px-6 py-4">{comp.quantity}</td>

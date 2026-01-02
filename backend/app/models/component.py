@@ -17,6 +17,7 @@ class Component(Base):
     name: Mapped[str] = mapped_column(String(200), nullable=False, unique=True)
     part_number: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     wbs: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    make_buy: Mapped[Optional[str]] = mapped_column(String(1), nullable=True)
 
     mass_kg: Mapped[float] = mapped_column(Numeric(12, 6), nullable=False, default=0)
     cost_usd: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False, default=0)

@@ -1,12 +1,19 @@
 from __future__ import annotations
 from typing import Optional, List
+from enum import Enum
 from pydantic import BaseModel, Field
 from app.schemas.subsystem import SubsystemOut
+
+class MakeBuy(str, Enum):
+    MAKE = "M"
+    BUY = "B"
+    PROCUREMENT = "P"
 
 class ComponentCreate(BaseModel):
     name: str = Field(min_length=1, max_length=200)
     part_number: Optional[str] = Field(default=None, max_length=50)
     wbs: Optional[str] = Field(default=None, max_length=50)
+    make_buy: Optional[MakeBuy] = None
     mass_kg: float = Field(ge=0)
     cost_usd: float = Field(ge=0)
     quantity: int = Field(ge=1)
@@ -17,6 +24,7 @@ class ComponentUpdate(BaseModel):
     name: Optional[str] = Field(default=None, min_length=1, max_length=200)
     part_number: Optional[str] = Field(default=None, max_length=50)
     wbs: Optional[str] = Field(default=None, max_length=50)
+    make_buy: Optional[MakeBuy] = None
     mass_kg: Optional[float] = Field(default=None, ge=0)
     cost_usd: Optional[float] = Field(default=None, ge=0)
     quantity: Optional[int] = Field(default=None, ge=1)
@@ -28,6 +36,7 @@ class ComponentOut(BaseModel):
     name: str
     part_number: Optional[str]
     wbs: Optional[str]
+    make_buy: Optional[MakeBuy]
     mass_kg: float
     cost_usd: float
     quantity: int
