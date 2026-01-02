@@ -4,6 +4,7 @@ import api from '../api';
 const AddComponentForm = ({ onAddSuccess }) => {
     const [formData, setFormData] = useState({
         name: '',
+        wbs: '',
         mass_kg: 0,
         cost_usd: 0,
         quantity: 1,
@@ -41,6 +42,7 @@ const AddComponentForm = ({ onAddSuccess }) => {
 
         const payload = {
             ...formData,
+            wbs: formData.wbs || null,
             mass_kg: parseFloat(formData.mass_kg),
             cost_usd: parseFloat(formData.cost_usd),
             quantity: parseInt(formData.quantity, 10),
@@ -52,6 +54,7 @@ const AddComponentForm = ({ onAddSuccess }) => {
             await api.post('/components', payload);
             setFormData({
                 name: '',
+                wbs: '',
                 mass_kg: 0,
                 cost_usd: 0,
                 quantity: 1,
@@ -72,17 +75,30 @@ const AddComponentForm = ({ onAddSuccess }) => {
             <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-white mb-4">Add New Component</h3>
             {error && <div className="mb-4 text-red-500 text-sm">{error}</div>}
             <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                    <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Name</label>
-                    <input
-                        type="text"
-                        name="name"
-                        id="name"
-                        required
-                        value={formData.name}
-                        onChange={handleChange}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm p-2 border"
-                    />
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                    <div className="sm:col-span-3">
+                        <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Name</label>
+                        <input
+                            type="text"
+                            name="name"
+                            id="name"
+                            required
+                            value={formData.name}
+                            onChange={handleChange}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm p-2 border"
+                        />
+                    </div>
+                    <div className="sm:col-span-1">
+                        <label htmlFor="wbs" className="block text-sm font-medium text-gray-700 dark:text-gray-300">WBS</label>
+                        <input
+                            type="text"
+                            name="wbs"
+                            id="wbs"
+                            value={formData.wbs}
+                            onChange={handleChange}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm p-2 border"
+                        />
+                    </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -172,4 +188,3 @@ const AddComponentForm = ({ onAddSuccess }) => {
 };
 
 export default AddComponentForm;
-
