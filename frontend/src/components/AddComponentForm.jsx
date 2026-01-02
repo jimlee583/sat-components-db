@@ -4,6 +4,7 @@ import api from '../api';
 const AddComponentForm = ({ onAddSuccess }) => {
     const [formData, setFormData] = useState({
         name: '',
+        part_number: '',
         wbs: '',
         mass_kg: 0,
         cost_usd: 0,
@@ -42,6 +43,7 @@ const AddComponentForm = ({ onAddSuccess }) => {
 
         const payload = {
             ...formData,
+            part_number: formData.part_number || null,
             wbs: formData.wbs || null,
             mass_kg: parseFloat(formData.mass_kg),
             cost_usd: parseFloat(formData.cost_usd),
@@ -54,6 +56,7 @@ const AddComponentForm = ({ onAddSuccess }) => {
             await api.post('/components', payload);
             setFormData({
                 name: '',
+                part_number: '',
                 wbs: '',
                 mass_kg: 0,
                 cost_usd: 0,
@@ -88,6 +91,19 @@ const AddComponentForm = ({ onAddSuccess }) => {
                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm p-2 border"
                         />
                     </div>
+                    <div className="sm:col-span-1">
+                        <label htmlFor="part_number" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Part Number</label>
+                        <input
+                            type="text"
+                            name="part_number"
+                            id="part_number"
+                            value={formData.part_number}
+                            onChange={handleChange}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm p-2 border"
+                        />
+                    </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                     <div className="sm:col-span-1">
                         <label htmlFor="wbs" className="block text-sm font-medium text-gray-700 dark:text-gray-300">WBS</label>
                         <input

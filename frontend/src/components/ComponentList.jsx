@@ -54,6 +54,7 @@ const ComponentList = ({ refreshTrigger }) => {
         setEditingId(component.id);
         setEditFormData({
             name: component.name,
+            part_number: component.part_number,
             wbs: component.wbs,
             mass_kg: component.mass_kg,
             cost_usd: component.cost_usd,
@@ -80,6 +81,7 @@ const ComponentList = ({ refreshTrigger }) => {
         try {
             const payload = {
                 name: editFormData.name,
+                part_number: editFormData.part_number || null,
                 wbs: editFormData.wbs || null,
                 mass_kg: parseFloat(editFormData.mass_kg),
                 cost_usd: parseFloat(editFormData.cost_usd),
@@ -115,6 +117,7 @@ const ComponentList = ({ refreshTrigger }) => {
                     <tr>
                         <th scope="col" className="px-6 py-3">ID</th>
                         <th scope="col" className="px-6 py-3">Name</th>
+                        <th scope="col" className="px-6 py-3">PN</th>
                         <th scope="col" className="px-6 py-3">WBS</th>
                         <th scope="col" className="px-6 py-3">Mass (kg)</th>
                         <th scope="col" className="px-6 py-3">Cost ($)</th>
@@ -145,6 +148,15 @@ const ComponentList = ({ refreshTrigger }) => {
                                                     value={editFormData.name} 
                                                     onChange={handleEditChange} 
                                                     className="border rounded p-1 w-full dark:bg-gray-700 dark:text-white dark:border-gray-600" 
+                                                />
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <input 
+                                                    type="text" 
+                                                    name="part_number" 
+                                                    value={editFormData.part_number || ''} 
+                                                    onChange={handleEditChange} 
+                                                    className="border rounded p-1 w-24 dark:bg-gray-700 dark:text-white dark:border-gray-600" 
                                                 />
                                             </td>
                                             <td className="px-6 py-4">
@@ -227,6 +239,7 @@ const ComponentList = ({ refreshTrigger }) => {
                                     ) : (
                                         <>
                                             <td className="px-6 py-4">{comp.name}</td>
+                                            <td className="px-6 py-4">{comp.part_number || '-'}</td>
                                             <td className="px-6 py-4">{comp.wbs || '-'}</td>
                                             <td className="px-6 py-4">{comp.mass_kg}</td>
                                             <td className="px-6 py-4">{comp.cost_usd}</td>
