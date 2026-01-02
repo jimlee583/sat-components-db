@@ -6,6 +6,7 @@ const AddComponentForm = ({ onAddSuccess }) => {
         name: '',
         part_number: '',
         wbs: '',
+        make_buy: '',
         mass_kg: 0,
         cost_usd: 0,
         quantity: 1,
@@ -45,6 +46,7 @@ const AddComponentForm = ({ onAddSuccess }) => {
             ...formData,
             part_number: formData.part_number || null,
             wbs: formData.wbs || null,
+            make_buy: formData.make_buy || null,
             mass_kg: parseFloat(formData.mass_kg),
             cost_usd: parseFloat(formData.cost_usd),
             quantity: parseInt(formData.quantity, 10),
@@ -58,6 +60,7 @@ const AddComponentForm = ({ onAddSuccess }) => {
                 name: '',
                 part_number: '',
                 wbs: '',
+                make_buy: '',
                 mass_kg: 0,
                 cost_usd: 0,
                 quantity: 1,
@@ -114,6 +117,21 @@ const AddComponentForm = ({ onAddSuccess }) => {
                             onChange={handleChange}
                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm p-2 border"
                         />
+                    </div>
+                    <div className="sm:col-span-1">
+                        <label htmlFor="make_buy" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Make/Buy</label>
+                        <select
+                            name="make_buy"
+                            id="make_buy"
+                            value={formData.make_buy}
+                            onChange={handleChange}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm p-2 border"
+                        >
+                            <option value="">-</option>
+                            <option value="M">Make</option>
+                            <option value="B">Buy</option>
+                            <option value="P">Procurement</option>
+                        </select>
                     </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
