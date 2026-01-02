@@ -31,6 +31,7 @@ def create_component(payload: ComponentCreate, db: Session = Depends(get_db)) ->
 
     comp = Component(
         name=payload.name,
+        part_number=payload.part_number,
         wbs=payload.wbs,
         mass_kg=payload.mass_kg,
         cost_usd=payload.cost_usd,
