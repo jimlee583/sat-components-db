@@ -105,6 +105,24 @@ const ComponentList = ({ refreshTrigger }) => {
         }
     };
 
+    const handleExport = async () => {
+        try {
+            const response = await api.get('/components/export/excel', {
+                responseType: 'blob',
+            });
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', 'components.xlsx');
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        } catch (err) {
+            console.error("Error exporting components:", err);
+            alert("Failed to export components.");
+        }
+    };
+
     useEffect(() => {
         fetchComponents();
     }, [refreshTrigger]);
@@ -123,6 +141,14 @@ const ComponentList = ({ refreshTrigger }) => {
 
     return (
         <div className="overflow-x-auto shadow-md sm:rounded-lg">
+            <div className="p-4 bg-white dark:bg-gray-800 flex justify-end">
+                <button
+                    onClick={handleExport}
+                    className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 focus:ring-4 focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800"
+                >
+                    Export to Excel
+                </button>
+            </div>
             <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
                 <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                     <tr>
