@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 from typing import Optional, List, Dict, Any
+from io import BytesIO
+import openpyxl
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import select
 
@@ -54,6 +57,55 @@ def list_components(
     if roots_only:
         stmt = stmt.where(Component.parent_id.is_(None))
     return list(db.execute(stmt.order_by(Component.id)).scalars().all())
+
+@router.get("/export/excel")
+def export_components_excel(db: Session = Depends(get_db)):
+    # Fetch all components
+    components = db.execute(select(Component).options(joinedload(Component.subsystem)).order_by(Component.id)).scalars().all()
+    
+    # Create workbook and sheet
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Components"
+    
+    # Headers
+    headers = ["ID", "Name", "Part Number", "WBS", "Make/Buy", "Mass (kg)", "Cost ($)", "Quantity", "Parent ID", "Subsystem"]
+    ws.append(headers)
+    
+    # Style headers
+    for cell in ws[1]:
+        cell.font = openpyxl.styles.Font(bold=True)
+        
+    # Data
+    for comp in components:
+        ws.append([
+            comp.id,
+            comp.name,
+            comp.part_number,
+            comp.wbs,
+            comp.make_buy,
+            comp.mass_kg,
+            comp.cost_usd,
+            comp.quantity,
+            comp.parent_id,
+            comp.subsystem.name if comp.subsystem else None
+        ])
+        
+    # Auto-width columns
+    for column_cells in ws.columns:
+        length = max(len(str(cell.value)) if cell.value is not None else 0 for cell in column_cells)
+        ws.column_dimensions[column_cells[0].column_letter].width = length + 2
+        
+    # Save to buffer
+    buffer = BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+    
+    headers = {
+        'Content-Disposition': 'attachment; filename="components.xlsx"'
+    }
+    
+    return StreamingResponse(buffer, media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', headers=headers)
 
 @router.get("/{component_id}", response_model=ComponentOut)
 def get_component(component_id: int, db: Session = Depends(get_db)) -> Component:
