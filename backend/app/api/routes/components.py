@@ -63,6 +63,56 @@ def export_components_excel(db: Session = Depends(get_db)):
     # Fetch all components
     components = db.execute(select(Component).options(joinedload(Component.subsystem)).order_by(Component.id)).scalars().all()
     
+    # Sort hierarchically (similar to frontend logic)
+    # 1. Build adjacency list
+    children_map: Dict[int, List[Component]] = {}
+    roots: List[Component] = []
+    
+    for comp in components:
+        if comp.parent_id is None:
+            roots.append(comp)
+        else:
+            if comp.parent_id not in children_map:
+                children_map[comp.parent_id] = []
+            children_map[comp.parent_id].append(comp)
+            
+    # 2. Flatten tree using DFS
+    sorted_components: List[Dict[str, Any]] = []
+    
+    def dfs(nodes: List[Component], depth: int = 0):
+        # Sort by ID for stability
+        nodes.sort(key=lambda x: x.id)
+        for node in nodes:
+            sorted_components.append({
+                "component": node,
+                "depth": depth
+            })
+            if node.id in children_map:
+                dfs(children_map[node.id], depth + 1)
+
+    dfs(roots)
+
+    # Handle orphans - preserve hierarchy for disconnected subtrees
+    visited_ids = {item["component"].id for item in sorted_components}
+    unvisited = [c for c in components if c.id not in visited_ids]
+    
+    if unvisited:
+        # Map of unvisited IDs for quick lookup
+        unvisited_ids = {c.id for c in unvisited}
+        
+        # Find orphan roots: nodes whose parents are NOT in the unvisited set
+        # This implies parent is either already visited (unlikely if logic holds), missing, or None
+        orphan_roots = []
+        for c in unvisited:
+            if c.parent_id not in unvisited_ids:
+                orphan_roots.append(c)
+        
+        # Sort orphan roots for stability
+        orphan_roots.sort(key=lambda x: x.id)
+        
+        # Run DFS on these roots
+        dfs(orphan_roots, depth=0)
+
     # Create workbook and sheet
     wb = openpyxl.Workbook()
     ws = wb.active
@@ -77,10 +127,18 @@ def export_components_excel(db: Session = Depends(get_db)):
         cell.font = openpyxl.styles.Font(bold=True)
         
     # Data
-    for comp in components:
+    for item in sorted_components:
+        comp = item["component"]
+        depth = item["depth"]
+        
+        # Indent name
+        # Use non-breaking hyphen (\u2011) to prevent spreadsheet software from interpreting as formula
+        indent = "\u2011" * depth
+        display_name = f"{indent} {comp.name}" if depth > 0 else comp.name
+        
         ws.append([
             comp.id,
-            comp.name,
+            display_name,
             comp.part_number,
             comp.wbs,
             comp.make_buy,
