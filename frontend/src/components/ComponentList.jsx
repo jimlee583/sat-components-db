@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import api from '../api';
 
 const ComponentList = ({ refreshTrigger }) => {
@@ -8,6 +8,57 @@ const ComponentList = ({ refreshTrigger }) => {
     const [editingId, setEditingId] = useState(null);
     const [editFormData, setEditFormData] = useState({});
     const [subsystems, setSubsystems] = useState([]);
+
+    const sortedComponents = useMemo(() => {
+        if (!components || components.length === 0) return [];
+
+        const childrenMap = {};
+        const roots = [];
+
+        // Build adjacency list
+        components.forEach(comp => {
+            if (comp.parent_id === null) {
+                roots.push(comp);
+            } else {
+                if (!childrenMap[comp.parent_id]) {
+                    childrenMap[comp.parent_id] = [];
+                }
+                childrenMap[comp.parent_id].push(comp);
+            }
+        });
+
+        const visited = new Set();
+
+        // Function to flatten the tree
+        const flatten = (nodes, depth = 0) => {
+            let result = [];
+            // Sort siblings by ID to maintain stable order
+            nodes.sort((a, b) => a.id - b.id);
+
+            nodes.forEach(node => {
+                if (visited.has(node.id)) return;
+                visited.add(node.id);
+
+                result.push({ ...node, depth });
+                
+                if (childrenMap[node.id]) {
+                    result = result.concat(flatten(childrenMap[node.id], depth + 1));
+                }
+            });
+            return result;
+        };
+
+        let result = flatten(roots);
+
+        // Handle any unvisited components (orphans or cycles)
+        const unvisited = components.filter(c => !visited.has(c.id));
+        if (unvisited.length > 0) {
+            unvisited.sort((a, b) => a.id - b.id);
+            unvisited.forEach(c => result.push({ ...c, depth: 0 }));
+        }
+
+        return result;
+    }, [components]);
 
     useEffect(() => {
         const fetchSubsystems = async () => {
@@ -166,12 +217,12 @@ const ComponentList = ({ refreshTrigger }) => {
                     </tr>
                 </thead>
                 <tbody>
-                    {components.length === 0 ? (
+                    {sortedComponents.length === 0 ? (
                         <tr>
                             <td colSpan="11" className="px-6 py-4 text-center">No components found.</td>
                         </tr>
                     ) : (
-                        components.map((comp) => {
+                        sortedComponents.map((comp) => {
                             const isEditing = editingId === comp.id;
                             return (
                                 <tr key={comp.id} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
@@ -289,7 +340,9 @@ const ComponentList = ({ refreshTrigger }) => {
                                         </>
                                     ) : (
                                         <>
-                                            <td className="px-6 py-4">{comp.name}</td>
+                                            <td className="px-6 py-4">
+                                                {'-'.repeat(comp.depth)}{comp.depth > 0 ? ' ' : ''}{comp.name}
+                                            </td>
                                             <td className="px-6 py-4">{comp.part_number || '-'}</td>
                                             <td className="px-6 py-4">{comp.wbs || '-'}</td>
                                             <td className="px-6 py-4">{getMakeBuyLabel(comp.make_buy)}</td>
